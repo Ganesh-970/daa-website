@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prim's Algorithm Visualizer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- Highlight.js for code syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .node {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .node:hover {
+            transform: scale(1.1);
+        }
+        .node-active {
+            fill: #10b981;
+            stroke: #047857;
+            stroke-width: 3px;
+        }
+        .node-inactive {
+            fill: #3b82f6;
+            stroke: #1d4ed8;
+            stroke-width: 2px;
+        }
+        .node-in-mst {
+            fill: #8b5cf6;
+            stroke: #7c3aed;
+            stroke-width: 3px;
+        }
+        .edge {
+            stroke: #94a3b8;
+            stroke-width: 2;
+            transition: all 0.3s ease;
+        }
+        .edge-active {
+            stroke: #10b981;
+            stroke-width: 4;
+        }
+        .edge-in-mst {
+            stroke: #8b5cf6;
+            stroke-width: 4;
+        }
+        .edge-considered {
+            stroke: #f59e0b;
+            stroke-width: 3;
+        }
+        .code-line {
+            transition: all 0.3s ease;
+            padding: 4px 8px;
+            margin: 2px 0;
+            border-radius: 4px;
+        }
+        .code-line-active {
+            background-color: rgba(16, 185, 129, 0.3);
+            border-left: 4px solid #10b981;
+            font-weight: 600;
+            color: #064e3b;
+        }
+        .code-line-pulse {
+            animation: pulse-highlight 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-highlight {
+            0%, 100% {
+                background-color: rgba(16, 185, 129, 0.3);
+            }
+            50% {
+                background-color: rgba(16, 185, 129, 0.6);
+            }
+        }
+        .graph-container {
+            background-color: #f8fafc;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .control-btn {
+            transition: all 0.2s ease;
+        }
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .control-btn:active {
+            transform: translateY(0);
+        }
+        .line-number {
+            display: inline-block;
+            width: 30px;
+            text-align: right;
+            margin-right: 10px;
+            color: #6b7280;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="mb-10">
+            <h1 class="text-4xl font-bold text-gray-900 text-center mb-2">Prim's Algorithm Visualizer</h1>
+            <p class="text-gray-600 text-center max-w-3xl mx-auto">
+                Interactive visualization of Prim's Algorithm for finding the Minimum Spanning Tree (MST) in a weighted undirected graph.
+                Watch as the algorithm builds the MST step by step, always selecting the minimum weight edge that connects a node in the MST to a node outside it.
+            </p>
+        </header>
+
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Left Panel: Code and Controls -->
+            <div class="lg:w-2/5 flex flex-col gap-6">
+                <!-- Algorithm Info Card -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Algorithm Information</h2>
+                    
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-2">Time & Space Complexity</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <p class="text-sm text-gray-600">Time Complexity</p>
+                                <p class="text-lg font-bold text-blue-700">O(E log V)</p>
+                                <p class="text-xs text-gray-500">Using adjacency list and priority queue</p>
+                            </div>
+                            <div class="bg-purple-50 p-4 rounded-lg">
+                                <p class="text-sm text-gray-600">Space Complexity</p>
+                                <p class="text-lg font-bold text-purple-700">O(V + E)</p>
+                                <p class="text-xs text-gray-500">For storing graph and priority queue</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-2">Key Concepts</h3>
+                        <ul class="list-disc pl-5 text-gray-600 space-y-1">
+                            <li>Greedy algorithm - makes locally optimal choice at each step</li>
+                            <li>Finds Minimum Spanning Tree (MST) for weighted undirected graphs</li>
+                            <li>MST connects all vertices with minimum total edge weight</li>
+                            <li>Works by growing the MST one vertex at a time</li>
+                            <li>Always selects the minimum weight edge connecting MST to non-MST vertices</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-700 mb-2">Current Step Details</h3>
+                        <div id="step-details" class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-gray-600">Click <span class="font-semibold text-green-600">Start</span> to begin visualization</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pseudocode Panel -->
+                <div class="bg-white rounded-xl shadow-lg p-6 flex-grow">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Algorithm Pseudocode</h2>
+                    <div class="overflow-auto h-96 bg-gray-50 rounded-lg p-4">
+                        <div id="pseudocode" class="font-mono text-sm"></div>
+                    </div>
+                </div>
+                
+                <!-- Step Counter and Controls -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-700">Step <span id="step-count">0</span> of <span id="total-steps">0</span></h3>
+                            <p class="text-sm text-gray-500" id="step-description">Ready to start visualization</p>
+                        </div>
+                        <div class="text-right">
+                            <h3 class="text-lg font-semibold text-gray-700">MST Weight: <span id="mst-weight">0</span></h3>
+                            <p class="text-sm text-gray-500" id="mst-edges-count">Edges in MST: 0</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Control Buttons -->
+                    <div class="flex flex-wrap gap-3 justify-center">
+                        <button id="reset-btn" class="control-btn bg-gray-200 hover:bg-gray-300 text-gray-800 px-5 py-3 rounded-lg font-semibold flex items-center gap-2">
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                        <button id="prev-btn" class="control-btn bg-blue-100 hover:bg-blue-200 text-blue-800 px-5 py-3 rounded-lg font-semibold flex items-center gap-2">
+                            <i class="fas fa-step-backward"></i> Previous
+                        </button>
+                        <button id="play-pause-btn" class="control-btn bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2">
+                            <i class="fas fa-play"></i> Start
+                        </button>
+                        <button id="next-btn" class="control-btn bg-blue-100 hover:bg-blue-200 text-blue-800 px-5 py-3 rounded-lg font-semibold flex items-center gap-2">
+                            <i class="fas fa-step-forward"></i> Next
+                        </button>
+                        <button id="speed-slow" class="control-btn bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-3 rounded-lg font-semibold">
+                            0.5x
+                        </button>
+                        <button id="speed-normal" class="control-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold">
+                            1x
+                        </button>
+                        <button id="speed-fast" class="control-btn bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-3 rounded-lg font-semibold">
+                            2x
+                        </button>
+                    </div>
+                    
+                    <!-- Speed Control -->
+                    <div class="mt-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-700 font-medium">Animation Speed</span>
+                            <span id="speed-value" class="text-blue-600 font-semibold">Normal (1x)</span>
+                        </div>
+                        <input id="speed-slider" type="range" min="0.5" max="3" step="0.5" value="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel: Visualization -->
+            <div class="lg:w-3/5">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden h-full">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-2xl font-bold text-gray-800">Graph Visualization</h2>
+                        <p class="text-gray-600 mt-1">Click on nodes to select a different starting vertex. Hover over edges to see weights.</p>
+                    </div>
+                    
+                    <!-- Legend -->
+                    <div class="px-6 py-3 bg-gray-50 border-b border-gray-200">
+                        <div class="flex flex-wrap gap-4">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
+                                <span class="text-sm text-gray-700">Unvisited Node</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 rounded-full bg-green-500 mr-2"></div>
+                                <span class="text-sm text-gray-700">Active Node</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 rounded-full bg-purple-600 mr-2"></div>
+                                <span class="text-sm text-gray-700">In MST</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-8 h-1 bg-green-500 mr-2"></div>
+                                <span class="text-sm text-gray-700">Active Edge</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-8 h-1 bg-purple-600 mr-2"></div>
+                                <span class="text-sm text-gray-700">MST Edge</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-8 h-1 bg-amber-500 mr-2"></div>
+                                <span class="text-sm text-gray-700">Edge in Heap</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Graph Visualization Area -->
+                    <div class="p-4 graph-container">
+                        <svg id="graph-svg" width="100%" height="500" class="rounded-lg"></svg>
+                    </div>
+                    
+                    <!-- Data Structures Display -->
+                    <div class="p-6 border-t border-gray-200">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Data Structures</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-blue-800 mb-2">Visited Set (In MST)</h4>
+                                <div id="visited-set" class="flex flex-wrap gap-2 min-h-10">
+                                    <span class="text-sm text-gray-500">No vertices in MST yet</span>
+                                </div>
+                            </div>
+                            <div class="bg-amber-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-amber-800 mb-2">Min-Heap (Priority Queue)</h4>
+                                <div id="min-heap" class="flex flex-wrap gap-2 min-h-10">
+                                    <span class="text-sm text-gray-500">Empty</span>
+                                </div>
+                            </div>
+                            <div class="bg-purple-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-purple-800 mb-2">MST Edges</h4>
+                                <div id="mst-edges" class="flex flex-col gap-1 min-h-10">
+                                    <span class="text-sm text-gray-500">No edges in MST yet</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="mt-12 pt-8 border-t border-gray-200 text-center text-gray-600">
+            <p class="mb-2">Prim's Algorithm Visualizer - An interactive tool for understanding graph algorithms</p>
+            <p class="text-sm">Use the controls to step through the algorithm execution and watch how the Minimum Spanning Tree is constructed.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Graph data structure
+        const graphData = {
+            'A': [['B', 4], ['H', 8]],
+            'B': [['A', 4], ['C', 8], ['H', 11]],
+            'C': [['B', 8], ['D', 7], ['F', 4], ['I', 2]],
+            'D': [['C', 7], ['E', 9], ['F', 14]],
+            'E': [['D', 9], ['F', 10]],
+            'F': [['C', 4], ['D', 14], ['E', 10], ['G', 2]],
+            'G': [['F', 2], ['H', 1], ['I', 6]],
+            'H': [['A', 8], ['B', 11], ['G', 1], ['I', 7]],
+            'I': [['C', 2], ['G', 6], ['H', 7]]
+        };
+
+        // Node positions for visualization
+        const nodePositions = {
+            'A': {x: 150, y: 100},
+            'B': {x: 300, y: 100},
+            'C': {x: 450, y: 100},
+            'D': {x: 600, y: 200},
+            'E': {x: 600, y: 350},
+            'F': {x: 450, y: 300},
+            'G': {x: 300, y: 300},
+            'H': {x: 150, y: 300},
+            'I': {x: 450, y: 200}
+        };
+
+        // Visualization state
+        let animationState = {
+            isPlaying: false,
+            currentStep: 0,
+            speed: 1,
+            mstWeight: 0,
+            visited: new Set(),
+            mstEdges: [],
+            minHeap: [],
+            currentNode: null,
+            activeEdge: null,
+            pseudocodeLines: [
+                {line: 1, text: "function prims_algorithm(graph, start_vertex):"},
+                {line: 2, text: "    visited = set()                    # Tracks vertices in MST"},
+                {line: 3, text: "    mst_edges = []                     # Stores edges in MST"},
+                {line: 4, text: "    min_heap = MinHeap()               # Priority queue"},
+                {line: 5, text: ""},
+                {line: 6, text: "    visited.add(start_vertex)          # Mark start as visited"},
+                {line: 7, text: ""},
+                {line: 8, text: "    # Add edges from start vertex to heap"},
+                {line: 9, text: "    for neighbor, weight in graph[start_vertex]:"},
+                {line: 10, text: "        min_heap.push((weight, start_vertex, neighbor))"},
+                {line: 11, text: ""},
+                {line: 12, text: "    # Main loop: grow MST"},
+                {line: 13, text: "    while not min_heap.is_empty() and len(visited) < len(graph):"},
+                {line: 14, text: "        weight, src, dest = min_heap.pop()    # Get min edge"},
+                {line: 15, text: ""},
+                {line: 16, text: "        if dest in visited:           # Skip if already in MST"},
+                {line: 17, text: "            continue"},
+                {line: 18, text: ""},
+                {line: 19, text: "        visited.add(dest)             # Add to MST"},
+                {line: 20, text: "        mst_edges.append((src, dest, weight))"},
+                {line: 21, text: ""},
+                {line: 22, text: "        # Add edges from new vertex"},
+                {line: 23, text: "        for neighbor, edge_weight in graph[dest]:"},
+                {line: 24, text: "            if neighbor not in visited:"},
+                {line: 25, text: "                min_heap.push((edge_weight, dest, neighbor))"},
+                {line: 26, text: ""},
+                {line: 27, text: "    return mst_edges                  # Return MST"}
+            ],
+            steps: [],
+            startNode: 'A'
+        };
+
+        // Initialize visualization
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeGraph();
+            initializePseudocode();
+            resetVisualization();
+            setupEventListeners();
+            updateVisualization();
+        });
+
+        // Initialize the graph visualization
+        function initializeGraph() {
+            const svg = document.getElementById('graph-svg');
+            svg.innerHTML = '';
+            
+            // Draw edges
+            for (const [src, neighbors] of Object.entries(graphData)) {
+                for (const [dest, weight] of neighbors) {
+                    // Draw each edge only once (avoid duplicates)
+                    if (src < dest) {
+                        const x1 = nodePositions[src].x;
+                        const y1 = nodePositions[src].y;
+                        const x2 = nodePositions[dest].x;
+                        const y2 = nodePositions[dest].y;
+                        
+                        // Create edge line
+                        const edge = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        edge.setAttribute('x1', x1);
+                        edge.setAttribute('y1', y1);
+                        edge.setAttribute('x2', x2);
+                        edge.setAttribute('y2', y2);
+                        edge.setAttribute('class', 'edge');
+                        edge.setAttribute('id', `edge-${src}-${dest}`);
+                        edge.setAttribute('data-src', src);
+                        edge.setAttribute('data-dest', dest);
+                        edge.setAttribute('data-weight', weight);
+                        
+                        // Add hover effect
+                        edge.addEventListener('mouseenter', function() {
+                            this.style.strokeWidth = '3';
+                            this.style.stroke = '#f59e0b';
+                        });
+                        edge.addEventListener('mouseleave', function() {
+                            if (!this.classList.contains('edge-active') && 
+                                !this.classList.contains('edge-in-mst')) {
+                                this.style.strokeWidth = '2';
+                                this.style.stroke = '#94a3b8';
+                            }
+                        });
+                        
+                        // Add weight label
+                        const midX = (x1 + x2) / 2;
+                        const midY = (y1 + y2) / 2;
+                        
+                        const textBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                        textBg.setAttribute('x', midX - 15);
+                        textBg.setAttribute('y', midY - 12);
+                        textBg.setAttribute('width', 30);
+                        textBg.setAttribute('height', 18);
+                        textBg.setAttribute('rx', 4);
+                        textBg.setAttribute('fill', '#f8fafc');
+                        textBg.setAttribute('stroke', '#cbd5e1');
+                        textBg.setAttribute('stroke-width', 1);
+                        textBg.setAttribute('class', 'edge-weight-bg');
+                        
+                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        text.setAttribute('x', midX);
+                        text.setAttribute('y', midY + 3);
+                        text.setAttribute('text-anchor', 'middle');
+                        text.setAttribute('font-size', '12');
+                        text.setAttribute('font-weight', '600');
+                        text.setAttribute('fill', '#475569');
+                        text.textContent = weight;
+                        text.setAttribute('class', 'edge-weight');
+                        
+                        svg.appendChild(edge);
+                        svg.appendChild(textBg);
+                        svg.appendChild(text);
+                    }
+                }
+            }
+            
+            // Draw nodes
+            for (const [node, pos] of Object.entries(nodePositions)) {
+                const nodeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                nodeGroup.setAttribute('class', 'node');
+                nodeGroup.setAttribute('id', `node-${node}`);
+                
+                // Node circle
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', pos.x);
+                circle.setAttribute('cy', pos.y);
+                circle.setAttribute('r', 24);
+                circle.setAttribute('class', 'node-inactive');
+                circle.setAttribute('id', `circle-${node}`);
+                
+                // Node label
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', pos.x);
+                text.setAttribute('y', pos.y + 4);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('font-size', '16');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('fill', 'white');
+                text.textContent = node;
+                
+                nodeGroup.appendChild(circle);
+                nodeGroup.appendChild(text);
+                svg.appendChild(nodeGroup);
+                
+                // Add click event to select starting node
+                nodeGroup.addEventListener('click', () => {
+                    if (!animationState.isPlaying && animationState.currentStep === 0) {
+                        animationState.startNode = node;
+                        resetVisualization();
+                        updateVisualization();
+                    }
+                });
+            }
+        }
+
+        // Initialize pseudocode with line highlighting capability
+        function initializePseudocode() {
+            const pseudocodeElement = document.getElementById('pseudocode');
+            pseudocodeElement.innerHTML = '';
+            
+            animationState.pseudocodeLines.forEach(line => {
+                const lineElement = document.createElement('div');
+                lineElement.className = `code-line ${line.text === '' ? 'h-4' : ''}`;
+                lineElement.setAttribute('data-line', line.line);
+                
+                if (line.text !== '') {
+                    const lineNumberSpan = document.createElement('span');
+                    lineNumberSpan.className = 'line-number';
+                    lineNumberSpan.textContent = line.line;
+                    
+                    const codeTextSpan = document.createElement('span');
+                    codeTextSpan.className = 'code-text';
+                    codeTextSpan.textContent = line.text;
+                    
+                    lineElement.appendChild(lineNumberSpan);
+                    lineElement.appendChild(codeTextSpan);
+                } else {
+                    lineElement.innerHTML = '&nbsp;';
+                }
+                
+                pseudocodeElement.appendChild(lineElement);
+            });
+        }
+
+        // Reset visualization to initial state
+        function resetVisualization() {
+            animationState.isPlaying = false;
+            animationState.currentStep = 0;
+            animationState.mstWeight = 0;
+            animationState.visited = new Set();
+            animationState.mstEdges = [];
+            animationState.minHeap = [];
+            animationState.currentNode = null;
+            animationState.activeEdge = null;
+            
+            // Remove any pulsing effects
+            document.querySelectorAll('.code-line').forEach(line => {
+                line.classList.remove('code-line-pulse');
+            });
+            
+            // Generate algorithm steps
+            generateAlgorithmSteps();
+            
+            // Reset UI elements
+            document.getElementById('play-pause-btn').innerHTML = '<i class="fas fa-play"></i> Start';
+            document.getElementById('step-count').textContent = '0';
+            document.getElementById('total-steps').textContent = animationState.steps.length;
+            document.getElementById('mst-weight').textContent = '0';
+            document.getElementById('mst-edges-count').textContent = 'Edges in MST: 0';
+            
+            // Update graph visualization
+            updateGraphVisualization();
+            updateDataStructuresDisplay();
+            updatePseudocodeHighlight();
+            updateStepDetails();
+        }
+
+        // Generate algorithm execution steps
+        function generateAlgorithmSteps() {
+            const steps = [];
+            const visited = new Set();
+            const mstEdges = [];
+            const minHeap = [];
+            let currentNode = animationState.startNode;
+            
+            // Step 1: Initialize algorithm
+            steps.push({
+                description: `Initialize Prim's Algorithm with starting vertex ${currentNode}`,
+                visited: new Set(),
+                mstEdges: [],
+                minHeap: [],
+                currentNode: currentNode,
+                activeEdge: null,
+                pseudocodeLine: 1,
+                mstWeight: 0
+            });
+            
+            // Step 2: Initialize data structures
+            steps.push({
+                description: `Initialize visited set, MST edges list, and min-heap`,
+                visited: new Set(),
+                mstEdges: [],
+                minHeap: [],
+                currentNode: currentNode,
+                activeEdge: null,
+                pseudocodeLine: 2,
+                mstWeight: 0
+            });
+            
+            // Step 3: Mark starting node as visited
+            visited.add(currentNode);
+            steps.push({
+                description: `Add starting vertex ${currentNode} to visited set`,
+                visited: new Set([...visited]),
+                mstEdges: [...mstEdges],
+                minHeap: [...minHeap],
+                currentNode: currentNode,
+                activeEdge: null,
+                pseudocodeLine: 6,
+                mstWeight: 0
+            });
+            
+            // Step 4: Add edges from starting node to min-heap
+            const startEdges = graphData[currentNode] || [];
+            for (const [neighbor, weight] of startEdges) {
+                minHeap.push({weight, src: currentNode, dest: neighbor});
+                minHeap.sort((a, b) => a.weight - b.weight);
+                
+                steps.push({
+                    description: `Add edge ${currentNode}-${neighbor} (weight: ${weight}) to min-heap`,
+                    visited: new Set([...visited]),
+                    mstEdges: [...mstEdges],
+                    minHeap: [...minHeap],
+                    currentNode: currentNode,
+                    activeEdge: {src: currentNode, dest: neighbor, weight},
+                    pseudocodeLine: 10,
+                    mstWeight: 0
+                });
+            }
+            
+            // Main algorithm loop
+            while (minHeap.length > 0 && visited.size < Object.keys(graphData).length) {
+                // Step: Extract minimum edge from heap
+                const {weight, src, dest} = minHeap.shift();
+                
+                steps.push({
+                    description: `Extract minimum weight edge ${src}-${dest} (weight: ${weight}) from heap`,
+                    visited: new Set([...visited]),
+                    mstEdges: [...mstEdges],
+                    minHeap: [...minHeap],
+                    currentNode: dest,
+                    activeEdge: {src, dest, weight},
+                    pseudocodeLine: 14,
+                    mstWeight: mstEdges.reduce((sum, edge) => sum + edge.weight, 0)
+                });
+                
+                // Skip if destination is already visited
+                if (visited.has(dest)) {
+                    steps.push({
+                        description: `Destination ${dest} is already in MST, skip this edge`,
+                        visited: new Set([...visited]),
+                        mstEdges: [...mstEdges],
+                        minHeap: [...minHeap],
+                        currentNode: dest,
+                        activeEdge: {src, dest, weight},
+                        pseudocodeLine: 16,
+                        mstWeight: mstEdges.reduce((sum, edge) => sum + edge.weight, 0)
+                    });
+                    continue;
+                }
+                
+                // Add edge to MST
+                visited.add(dest);
+                mstEdges.push({src, dest, weight});
+                
+                steps.push({
+                    description: `Add vertex ${dest} to visited set and edge ${src}-${dest} to MST`,
+                    visited: new Set([...visited]),
+                    mstEdges: [...mstEdges],
+                    minHeap: [...minHeap],
+                    currentNode: dest,
+                    activeEdge: {src, dest, weight},
+                    pseudocodeLine: 19,
+                    mstWeight: mstEdges.reduce((sum, edge) => sum + edge.weight, 0)
+                });
+                
+                // Add edges from new vertex to heap
+                const newEdges = graphData[dest] || [];
+                for (const [neighbor, edgeWeight] of newEdges) {
+                    if (!visited.has(neighbor)) {
+                        minHeap.push({weight: edgeWeight, src: dest, dest: neighbor});
+                        minHeap.sort((a, b) => a.weight - b.weight);
+                        
+                        steps.push({
+                            description: `Add edge ${dest}-${neighbor} (weight: ${edgeWeight}) to min-heap`,
+                            visited: new Set([...visited]),
+                            mstEdges: [...mstEdges],
+                            minHeap: [...minHeap],
+                            currentNode: dest,
+                            activeEdge: {src: dest, dest: neighbor, weight: edgeWeight},
+                            pseudocodeLine: 25,
+                            mstWeight: mstEdges.reduce((sum, edge) => sum + edge.weight, 0)
+                        });
+                    }
+                }
+            }
+            
+            // Final step: Algorithm complete
+            steps.push({
+                description: `Algorithm complete! Minimum Spanning Tree found with total weight ${mstEdges.reduce((sum, edge) => sum + edge.weight, 0)}`,
+                visited: new Set([...visited]),
+                mstEdges: [...mstEdges],
+                minHeap: [...minHeap],
+                currentNode: null,
+                activeEdge: null,
+                pseudocodeLine: 27,
+                mstWeight: mstEdges.reduce((sum, edge) => sum + edge.weight, 0)
+            });
+            
+            animationState.steps = steps;
+        }
+
+        // Update graph visualization based on current state
+        function updateGraphVisualization() {
+            const currentStep = animationState.currentStep;
+            const step = animationState.steps[currentStep];
+            
+            if (!step) return;
+            
+            // Reset all nodes and edges
+            document.querySelectorAll('.node circle').forEach(circle => {
+                circle.classList.remove('node-active', 'node-in-mst');
+                circle.classList.add('node-inactive');
+            });
+            
+            document.querySelectorAll('.edge').forEach(edge => {
+                edge.classList.remove('edge-active', 'edge-in-mst', 'edge-considered');
+                edge.style.stroke = '#94a3b8';
+                edge.style.strokeWidth = '2';
+            });
+            
+            // Highlight visited nodes (in MST)
+            step.visited.forEach(node => {
+                const circle = document.getElementById(`circle-${node}`);
+                if (circle) {
+                    circle.classList.remove('node-inactive');
+                    circle.classList.add('node-in-mst');
+                }
+            });
+            
+            // Highlight current node
+            if (step.currentNode) {
+                const circle = document.getElementById(`circle-${step.currentNode}`);
+                if (circle) {
+                    circle.classList.remove('node-inactive');
+                    circle.classList.add('node-active');
+                }
+            }
+            
+            // Highlight MST edges
+            step.mstEdges.forEach(edge => {
+                const edgeId = `edge-${edge.src < edge.dest ? edge.src + '-' + edge.dest : edge.dest + '-' + edge.src}`;
+                const edgeElement = document.getElementById(edgeId);
+                if (edgeElement) {
+                    edgeElement.classList.add('edge-in-mst');
+                    edgeElement.style.stroke = '#8b5cf6';
+                    edgeElement.style.strokeWidth = '4';
+                    
+                    // Animate the edge
+                    gsap.fromTo(edgeElement, 
+                        {strokeWidth: 2}, 
+                        {strokeWidth: 4, duration: 0.5 / animationState.speed, ease: "power2.out"}
+                    );
+                }
+            });
+            
+            // Highlight active edge
+            if (step.activeEdge) {
+                const {src, dest} = step.activeEdge;
+                const edgeId = `edge-${src < dest ? src + '-' + dest : dest + '-' + src}`;
+                const edgeElement = document.getElementById(edgeId);
+                if (edgeElement) {
+                    edgeElement.classList.add('edge-active');
+                    edgeElement.style.stroke = '#10b981';
+                    edgeElement.style.strokeWidth = '4';
+                    
+                    // Pulse animation for active edge
+                    gsap.to(edgeElement, {
+                        strokeWidth: 5,
+                        duration: 0.3 / animationState.speed,
+                        yoyo: true,
+                        repeat: 1,
+                        ease: "power2.inOut"
+                    });
+                }
+            }
+            
+            // Highlight edges in heap
+            step.minHeap.forEach(edge => {
+                const edgeId = `edge-${edge.src < edge.dest ? edge.src + '-' + edge.dest : edge.dest + '-' + edge.src}`;
+                const edgeElement = document.getElementById(edgeId);
+                if (edgeElement && !edgeElement.classList.contains('edge-in-mst')) {
+                    edgeElement.classList.add('edge-considered');
+                    edgeElement.style.stroke = '#f59e0b';
+                    edgeElement.style.strokeWidth = '3';
+                }
+            });
+        }
+
+        // Update data structures display
+        function updateDataStructuresDisplay() {
+            const currentStep = animationState.currentStep;
+            const step = animationState.steps[currentStep];
+            
+            if (!step) return;
+            
+            // Update visited set display
+            const visitedSetElement = document.getElementById('visited-set');
+            visitedSetElement.innerHTML = '';
+            
+            if (step.visited.size === 0) {
+                visitedSetElement.innerHTML = '<span class="text-sm text-gray-500">No vertices in MST yet</span>';
+            } else {
+                Array.from(step.visited).sort().forEach(node => {
+                    const badge = document.createElement('div');
+                    badge.className = 'bg-purple-100 text-purple-800 font-semibold px-3 py-1 rounded-full text-sm';
+                    badge.textContent = node;
+                    visitedSetElement.appendChild(badge);
+                });
+            }
+            
+            // Update min-heap display
+            const minHeapElement = document.getElementById('min-heap');
+            minHeapElement.innerHTML = '';
+            
+            if (step.minHeap.length === 0) {
+                minHeapElement.innerHTML = '<span class="text-sm text-gray-500">Empty</span>';
+            } else {
+                // Show only top 5 edges to avoid clutter
+                const displayHeap = step.minHeap.slice(0, 5);
+                displayHeap.forEach(edge => {
+                    const badge = document.createElement('div');
+                    badge.className = 'bg-amber-100 text-amber-800 font-semibold px-3 py-1 rounded-full text-sm';
+                    badge.textContent = `${edge.src}-${edge.dest}:${edge.weight}`;
+                    minHeapElement.appendChild(badge);
+                });
+                
+                if (step.minHeap.length > 5) {
+                    const moreBadge = document.createElement('div');
+                    moreBadge.className = 'bg-amber-50 text-amber-600 font-semibold px-3 py-1 rounded-full text-sm';
+                    moreBadge.textContent = `+${step.minHeap.length - 5} more`;
+                    minHeapElement.appendChild(moreBadge);
+                }
+            }
+            
+            // Update MST edges display
+            const mstEdgesElement = document.getElementById('mst-edges');
+            mstEdgesElement.innerHTML = '';
+            
+            if (step.mstEdges.length === 0) {
+                mstEdgesElement.innerHTML = '<span class="text-sm text-gray-500">No edges in MST yet</span>';
+            } else {
+                step.mstEdges.forEach(edge => {
+                    const edgeElement = document.createElement('div');
+                    edgeElement.className = 'flex justify-between items-center bg-purple-50 px-3 py-2 rounded';
+                    
+                    const edgeText = document.createElement('span');
+                    edgeText.className = 'text-purple-700 font-medium';
+                    edgeText.textContent = `${edge.src} - ${edge.dest}`;
+                    
+                    const weightText = document.createElement('span');
+                    weightText.className = 'bg-purple-100 text-purple-800 font-bold px-2 py-1 rounded text-sm';
+                    weightText.textContent = edge.weight;
+                    
+                    edgeElement.appendChild(edgeText);
+                    edgeElement.appendChild(weightText);
+                    mstEdgesElement.appendChild(edgeElement);
+                });
+            }
+        }
+
+        // Update pseudocode highlighting
+        function updatePseudocodeHighlight() {
+            const currentStep = animationState.currentStep;
+            const step = animationState.steps[currentStep];
+            
+            if (!step) return;
+            
+            // Remove active class from all lines
+            document.querySelectorAll('.code-line').forEach(line => {
+                line.classList.remove('code-line-active', 'code-line-pulse');
+            });
+            
+            // Add active class to current line
+            const activeLine = document.querySelector(`.code-line[data-line="${step.pseudocodeLine}"]`);
+            if (activeLine) {
+                activeLine.classList.add('code-line-active');
+                
+                // Add pulsing animation if algorithm is playing
+                if (animationState.isPlaying) {
+                    activeLine.classList.add('code-line-pulse');
+                }
+                
+                // Scroll to active line
+                activeLine.scrollIntoView({behavior: 'smooth', block: 'center'});
+            }
+        }
+
+        // Update step details display
+        function updateStepDetails() {
+            const currentStep = animationState.currentStep;
+            const step = animationState.steps[currentStep];
+            const stepDetailsElement = document.getElementById('step-details');
+            
+            if (!step) {
+                stepDetailsElement.innerHTML = '<p class="text-gray-600">Click <span class="font-semibold text-green-600">Start</span> to begin visualization</p>';
+                return;
+            }
+            
+            let detailsHTML = `<p class="text-gray-800 font-medium mb-2">${step.description}</p>`;
+            
+            if (step.activeEdge) {
+                detailsHTML += `<p class="text-sm text-gray-600">Active edge: <span class="font-semibold">${step.activeEdge.src}-${step.activeEdge.dest}</span> with weight <span class="font-bold">${step.activeEdge.weight}</span></p>`;
+            }
+            
+            if (step.currentNode) {
+                detailsHTML += `<p class="text-sm text-gray-600 mt-1">Current node: <span class="font-semibold">${step.currentNode}</span></p>`;
+            }
+            
+            stepDetailsElement.innerHTML = detailsHTML;
+            
+            // Update step counter
+            document.getElementById('step-count').textContent = currentStep + 1;
+            document.getElementById('total-steps').textContent = animationState.steps.length;
+            
+            // Update MST weight
+            document.getElementById('mst-weight').textContent = step.mstWeight;
+            document.getElementById('mst-edges-count').textContent = `Edges in MST: ${step.mstEdges.length}`;
+        }
+
+        // Update all visualization components
+        function updateVisualization() {
+            updateGraphVisualization();
+            updateDataStructuresDisplay();
+            updatePseudocodeHighlight();
+            updateStepDetails();
+        }
+
+        // Move to next step
+        function nextStep() {
+            if (animationState.currentStep < animationState.steps.length - 1) {
+                animationState.currentStep++;
+                updateVisualization();
+                return true;
+            } else {
+                // Algorithm complete
+                if (animationState.isPlaying) {
+                    pauseAnimation();
+                }
+                return false;
+            }
+        }
+
+        // Move to previous step
+        function prevStep() {
+            if (animationState.currentStep > 0) {
+                animationState.currentStep--;
+                updateVisualization();
+                return true;
+            }
+            return false;
+        }
+
+        // Animation loop
+        let animationInterval = null;
+        
+        function startAnimation() {
+            if (animationState.isPlaying) return;
+            
+            // If we're at the end, reset to beginning
+            if (animationState.currentStep >= animationState.steps.length - 1) {
+                resetVisualization();
+            }
+            
+            animationState.isPlaying = true;
+            document.getElementById('play-pause-btn').innerHTML = '<i class="fas fa-pause"></i> Pause';
+            
+            // Add pulsing effect to current code line
+            updatePseudocodeHighlight();
+            
+            if (animationInterval) {
+                clearInterval(animationInterval);
+            }
+            
+            animationInterval = setInterval(() => {
+                if (!nextStep()) {
+                    clearInterval(animationInterval);
+                    animationState.isPlaying = false;
+                    document.getElementById('play-pause-btn').innerHTML = '<i class="fas fa-play"></i> Start';
+                    
+                    // Remove pulsing effect when done
+                    const activeLine = document.querySelector('.code-line-active');
+                    if (activeLine) {
+                        activeLine.classList.remove('code-line-pulse');
+                    }
+                }
+            }, 1500 / animationState.speed);
+        }
+        
+        function pauseAnimation() {
+            animationState.isPlaying = false;
+            document.getElementById('play-pause-btn').innerHTML = '<i class="fas fa-play"></i> Resume';
+            
+            // Remove pulsing effect when paused
+            const activeLine = document.querySelector('.code-line-active');
+            if (activeLine) {
+                activeLine.classList.remove('code-line-pulse');
+            }
+            
+            if (animationInterval) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+            }
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Play/Pause button
+            document.getElementById('play-pause-btn').addEventListener('click', () => {
+                if (animationState.isPlaying) {
+                    pauseAnimation();
+                } else {
+                    startAnimation();
+                }
+            });
+            
+            // Next button
+            document.getElementById('next-btn').addEventListener('click', () => {
+                if (animationState.isPlaying) {
+                    pauseAnimation();
+                }
+                nextStep();
+            });
+            
+            // Previous button
+            document.getElementById('prev-btn').addEventListener('click', () => {
+                if (animationState.isPlaying) {
+                    pauseAnimation();
+                }
+                prevStep();
+            });
+            
+            // Reset button
+            document.getElementById('reset-btn').addEventListener('click', () => {
+                if (animationState.isPlaying) {
+                    pauseAnimation();
+                }
+                resetVisualization();
+            });
+            
+            // Speed controls
+            document.getElementById('speed-slow').addEventListener('click', () => {
+                animationState.speed = 0.5;
+                updateSpeedDisplay();
+                if (animationState.isPlaying) {
+                    pauseAnimation();
+                    startAnimation();
+                }
+            });
+            
+            document.getElementById('speed-normal').addEventListener('click', () => {
+                animationState.speed = 1;
+                updateSpeedDisplay();
+                if (animationState.isPlaying) {
+                    pauseAnimation();
+                    startAnimation();
+                }
+            });
+            
+            document.getElementById('speed-fast').addEventListener('click', () => {
+                animationState.speed = 2;
+                updateSpeedDisplay();
+                if (animationState.isPlaying) {
+                    pauseAnimation();
+                    startAnimation();
+                }
+            });
+            
+            // Speed slider
+            document.getElementById('speed-slider').addEventListener('input', (e) => {
+                animationState.speed = parseFloat(e.target.value);
+                updateSpeedDisplay();
+                if (animationState.isPlaying) {
+                    pauseAnimation();
+                    startAnimation();
+                }
+            });
+        }
+
+        // Update speed display
+        function updateSpeedDisplay() {
+            const speedValueElement = document.getElementById('speed-value');
+            const speedSlider = document.getElementById('speed-slider');
+            
+            speedSlider.value = animationState.speed;
+            
+            if (animationState.speed === 0.5) {
+                speedValueElement.textContent = 'Slow (0.5x)';
+            } else if (animationState.speed === 1) {
+                speedValueElement.textContent = 'Normal (1x)';
+            } else if (animationState.speed === 1.5) {
+                speedValueElement.textContent = 'Fast (1.5x)';
+            } else if (animationState.speed === 2) {
+                speedValueElement.textContent = 'Faster (2x)';
+            } else if (animationState.speed === 2.5) {
+                speedValueElement.textContent = 'Very Fast (2.5x)';
+            } else if (animationState.speed === 3) {
+                speedValueElement.textContent = 'Maximum (3x)';
+            }
+        }
+    </script>
+</body>
+</html>
